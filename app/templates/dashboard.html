@@ -120,7 +120,7 @@
         <div class="card p-4 text-center border border-danger shadow-lg" style="max-width: 300px; background: #111;">
             <div class="text-neon-pink fs-1 mb-2"><i class="bi bi-emoji-neutral"></i></div>
             <h4 class="text-white fst-italic">WAIT A SECOND...</h4>
-            <p class="text-muted small mb-4">"DID YOU REALLY NOT EAT THIS? HMMM... I DON'T DOUBT YOU, BUT THE SYSTEM IS WATCHING. 🤨"</p>
+            <p class="text-muted small mb-4" id="deleteMsg">"DID YOU REALLY NOT EAT THIS? HMMM... I DON'T DOUBT YOU, BUT THE SYSTEM IS WATCHING. 🤨"</p>
             
             <div class="d-flex gap-2">
                 <button onclick="closeDeleteModal()" class="btn btn-outline-secondary w-50 rounded-0">NO, KEEP IT</button>
@@ -131,9 +131,16 @@
 
     <!-- Scripts -->
     <script>
-        function confirmDelete(url) {
+        function confirmDelete(url, type) {
             document.getElementById('deleteModal').style.display = 'flex';
             document.getElementById('confirmDeleteBtn').href = url;
+            
+            const msg = document.getElementById('deleteMsg');
+            if (type === 'food') {
+                msg.innerText = "\"DID YOU REALLY NOT EAT THIS? HMMM... I DON'T DOUBT YOU, BUT THE SYSTEM IS WATCHING. 🤨\"";
+            } else {
+                msg.innerText = "\"DID YOU SKIP THIS WORKOUT? SERIOUSLY? THE LOGS DON'T LIE, BUT I'LL ALLOW IT THIS ONCE. 😤\"";
+            }
         }
         
         function closeDeleteModal() {
@@ -164,7 +171,7 @@
                 <div class="fw-bold text-white" style="font-size: 1.1rem; line-height: 1;">{{ item.name.upper() }}</div>
                 <div class="text-neon-green small">{{ item.calories }} KCAL</div>
             </div>
-            <button onclick="confirmDelete('/delete_food/{{ item.id }}')" class="btn text-secondary p-2"><i class="bi bi-x-lg"></i></button>
+            <button onclick="confirmDelete('/delete_food/{{ item.id }}', 'food')" class="btn text-secondary p-2"><i class="bi bi-x-lg"></i></button>
         </div>
         {% else %}
         <p class="text-muted small text-center py-2 fst-italic">NO FUEL DETECTED</p>
@@ -184,7 +191,7 @@
                 <div class="fw-bold text-white" style="font-size: 1.1rem; line-height: 1;">{{ item.activity_name.upper() }}</div>
                 <div class="text-neon-pink small">{{ item.duration_minutes }} MIN • -{{ item.calories_burned }} KCAL</div>
             </div>
-             <button onclick="confirmDelete('/delete_exercise/{{ item.id }}')" class="btn text-secondary p-2"><i class="bi bi-x-lg"></i></button>
+             <button onclick="confirmDelete('/delete_exercise/{{ item.id }}', 'exercise')" class="btn text-secondary p-2"><i class="bi bi-x-lg"></i></button>
         </div>
         {% else %}
         <p class="text-muted small text-center py-2 fst-italic">NO MISSIONS COMPLETE</p>

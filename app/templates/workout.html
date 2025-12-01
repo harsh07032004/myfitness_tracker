@@ -175,7 +175,7 @@
         // Core Vars
         let timerInterval; let startTime; let watchId = null;
         let totalDist = 0; let totalSteps = 0; let totalCals = 0; 
-        let totalSets = 0; // New Sets Counter
+        let totalSets = 0; 
         let lastLat = null; let lastLon = null;
         let currentTab = 'cardio'; 
         let currentCardioMode = 'run';
@@ -183,11 +183,51 @@
         const USER_WEIGHT = {{ user_weight or 70 }};
         const PACE = { walk: { speedKmh: 4.5, stepsPerMin: 80, calsPerMin: 4 }, run:  { speedKmh: 8.0, stepsPerMin: 140, calsPerMin: 10 } };
 
-        // --- Initial Setup ---
+        // --- Pedometer Logic ---
+        let lastAccel = { x:0, y:0, z:0 };
+        let stepThreshold = 12; // Sensitivity (Adjusted for pocket)
+
+        function initPedometer() {
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                // iOS 13+ needs permission
+                DeviceMotionEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            window.addEventListener('devicemotion', countSteps);
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                // Android / Standard
+                window.addEventListener('devicemotion', countSteps);
+            }
+        }
+
+        function countSteps(event) {
+            if(currentTab !== 'cardio') return;
+            
+            let acc = event.accelerationIncludingGravity;
+            if(!acc) return;
+
+            let deltaX = Math.abs(acc.x - lastAccel.x);
+            let deltaY = Math.abs(acc.y - lastAccel.y);
+            let deltaZ = Math.abs(acc.z - lastAccel.z);
+
+            // Simple Peak Detection
+            if (deltaX + deltaY + deltaZ > stepThreshold) {
+                totalSteps++;
+                // Add tiny cal burn per step (0.04 kcal) independent of GPS
+                totalCals += 0.04; 
+            }
+
+            lastAccel = { x: acc.x, y: acc.y, z: acc.z };
+        }
+
+        // --- Main Logic ---
+
         document.addEventListener('DOMContentLoaded', () => {
             switchTab('cardio'); 
             setMode('run');
-            // Auto-select first gym item to prevent error
             let firstCard = document.querySelector('.gym-card');
             if(firstCard) firstCard.click();
         });
@@ -221,30 +261,22 @@
         }
 
         function selectGymExercise(card, name, met) {
-            // UI Highlight
             document.querySelectorAll('.gym-card').forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
-            
-            // Logic Update
             document.getElementById('selectedExerciseName').value = name;
-            updateMet(met); // Set slider to default
+            updateMet(met);
         }
 
         function updateMet(val) {
-            // Update Input & UI
             document.getElementById('selectedExerciseMet').value = val;
             document.getElementById('metSlider').value = val;
             document.getElementById('metDisplay').innerText = parseFloat(val).toFixed(1);
-            
-            // Update live dashboard if running
-            if (currentTab === 'gym') {
-                document.getElementById('val1').innerText = parseFloat(val).toFixed(1);
-            }
+            if (currentTab === 'gym') document.getElementById('val1').innerText = parseFloat(val).toFixed(1);
         }
 
         function startSession() {
+            initPedometer(); // Request Motion Access
             startTime = Date.now();
-            lastTime = Date.now(); // Init for GPS calc
             document.getElementById('startBtn').classList.add('d-none');
             document.getElementById('stopBtn').classList.remove('d-none');
             document.getElementById('timerRing').classList.add('timer-active');
@@ -257,7 +289,7 @@
             } else { 
                 document.getElementById('statusText').innerText = "LIFTING MODE";
                 useGps = false; 
-                document.getElementById('setBtn').classList.remove('d-none'); // Show Set Button
+                document.getElementById('setBtn').classList.remove('d-none');
             }
             
             timerInterval = setInterval(gameLoop, 1000);
@@ -265,18 +297,14 @@
 
         function logSet() {
             totalSets++;
-            totalCals += 15; // Bonus 15 kcal per set
+            totalCals += 15;
             document.getElementById('val2').innerText = totalSets;
             document.getElementById('val3').innerText = Math.floor(totalCals);
-            
-            // Visual Feedback
             let btn = document.getElementById('setBtn');
             let origText = btn.innerHTML;
             btn.innerHTML = "<span class='text-neon-green'>SET RECORDED!</span>";
             setTimeout(() => btn.innerHTML = origText, 1000);
         }
-
-        let lastTime = null;
 
         function onGpsSuccess(pos) {
             if(currentTab !== 'cardio') return;
@@ -285,49 +313,17 @@
             document.getElementById('statusText').className = "text-neon-green small fw-bold";
             document.getElementById('gpsHint').style.display = 'none';
 
-            let lat = pos.coords.latitude; 
-            let lon = pos.coords.longitude;
-            let accuracy = pos.coords.accuracy; // in meters
-            let currentTime = Date.now();
-            
-            // Ignore terrible signal (>30m accuracy)
-            if (accuracy > 30) return;
-
+            let lat = pos.coords.latitude; let lon = pos.coords.longitude;
             if (lastLat) {
-                let d = getDist(lastLat, lastLon, lat, lon); // Distance in km
-                let distMeters = d * 1000;
-                
-                // Calculate time delta in seconds
-                let timeDiff = (currentTime - lastTime) / 1000;
-                if (timeDiff <= 0) timeDiff = 1; 
-                
-                // Calculate Speed manually (m/s)
-                let calculatedSpeed = distMeters / timeDiff;
-                let reportedSpeed = pos.coords.speed;
-                
-                // Use reported speed if good, else use calculated
-                let finalSpeed = (reportedSpeed !== null && reportedSpeed >= 0) ? reportedSpeed : calculatedSpeed;
-
-                // SMART FILTER:
-                // 1. Must have moved at least 2.5 meters (ignores tiny jitter)
-                // 2. Speed must be reasonable (0.5 m/s to 10 m/s - walk to sprint)
-                // 3. Don't count teleportation (impossible speed > 36 km/h)
-                if (distMeters > 2.5 && finalSpeed > 0.4 && finalSpeed < 10) {
+                let d = getDist(lastLat, lastLon, lat, lon);
+                // Filter noise > 3 meters
+                if (d > 0.003) { 
                     totalDist += d; 
-                    
-                    // Dynamic Steps: Running has longer stride (fewer steps/km) than walking
-                    // Walking: ~1300 steps/km. Running: ~1000 steps/km
-                    let stepsMultiplier = finalSpeed > 2.5 ? 1000 : 1350;
-                    totalSteps += Math.floor(d * stepsMultiplier);
-                    
-                    // Calories: Weight * Distance * Multiplier
-                    totalCals += d * USER_WEIGHT * 1.03; 
+                    // Distance calories only (steps handled by pedometer)
+                    totalCals += d * USER_WEIGHT * 0.5; 
                 }
             }
-            
-            lastLat = lat; 
-            lastLon = lon;
-            lastTime = currentTime;
+            lastLat = lat; lastLon = lon;
         }
 
         function onGpsFail() {
@@ -339,27 +335,28 @@
         }
 
         function gameLoop() {
-            // Timer
             let delta = Math.floor((Date.now() - startTime) / 1000);
             let m = Math.floor(delta / 60); let s = delta % 60;
             document.getElementById('timerDisplay').innerText = (m<10?"0"+m:m) + ":" + (s<10?"0"+s:s);
 
             if (currentTab === 'cardio') {
-                // Cardio Logic
                 if (!useGps) {
-                    let stats = PACE[currentCardioMode];
-                    totalDist += stats.speedKmh / 3600; 
-                    totalSteps += stats.stepsPerMin / 60; 
-                    totalCals += stats.calsPerMin / 60;
+                    // Simulation fallback if NO GPS and NO Pedometer movement
+                    // But if Pedometer is working, totalSteps will increase automatically
+                    if (totalSteps === 0 && delta > 5) {
+                         // Only simulate if user is truly not moving after 5s
+                         let stats = PACE[currentCardioMode];
+                         totalDist += stats.speedKmh / 3600; 
+                         totalSteps += stats.stepsPerMin / 60; 
+                         totalCals += stats.calsPerMin / 60;
+                    }
                 }
                 document.getElementById('val1').innerText = totalDist.toFixed(2);
                 document.getElementById('val2').innerText = Math.floor(totalSteps);
             } else { 
-                // Gym Logic
                 let met = parseFloat(document.getElementById('selectedExerciseMet').value);
                 let calsPerSec = ((met * USER_WEIGHT * 3.5) / 200) / 60;
                 totalCals += calsPerSec;
-                // Sets are manually updated now
             }
             document.getElementById('val3').innerText = Math.floor(totalCals);
         }
@@ -367,8 +364,9 @@
         function stopSession() {
             clearInterval(timerInterval); 
             if (watchId) navigator.geolocation.clearWatch(watchId);
+            window.removeEventListener('devicemotion', countSteps); // Stop Pedometer
             
-            document.getElementById('setBtn').classList.add('d-none'); // Hide button
+            document.getElementById('setBtn').classList.add('d-none');
             
             let durationMins = Math.ceil((Date.now() - startTime) / 60000);
             if (durationMins < 1) durationMins = 1;
