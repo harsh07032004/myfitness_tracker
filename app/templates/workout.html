@@ -283,12 +283,24 @@
             document.getElementById('gpsHint').style.display = 'none';
 
             let lat = pos.coords.latitude; let lon = pos.coords.longitude;
-            if (lastLat) {
+            let speed = pos.coords.speed; // Speed in m/s
+
+            // Filter: Ignore if accuracy is bad (>20m) or speed is too low (< 0.8 m/s ~ 2.8 km/h)
+            // This prevents "drift" steps when standing still.
+            let isMoving = speed !== null && speed > 0.8;
+
+            if (lastLat && isMoving) {
                 let d = getDist(lastLat, lastLon, lat, lon);
-                if (d > 0.002) { 
+                // Double check distance sanity (e.g. max 10 meters per second)
+                if (d > 0.0005 && d < 0.01) { 
                     totalDist += d; 
-                    totalSteps += Math.floor((d * 1000) / 0.75); 
-                    totalCals += d * 60; 
+                    // Steps: ~1.3 steps per meter for running, ~1.5 for walking
+                    // We use 1.4 as an average multiplier for GPS distance
+                    let stepsAdded = Math.floor(d * 1400); 
+                    totalSteps += stepsAdded;
+                    
+                    // Calories: Weight * Distance * Multiplier
+                    totalCals += d * USER_WEIGHT * 1.03; 
                 }
             }
             lastLat = lat; lastLon = lon;

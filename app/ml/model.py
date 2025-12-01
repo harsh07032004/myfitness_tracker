@@ -11,11 +11,19 @@ class FoodClassifier:
         
         # Configure Gemini API
         # Always use environment variables for API keys in production!
-        api_key = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE") # Placeholder for local testing
-        if not api_key or api_key == "YOUR_GEMINI_API_KEY_HERE":
-            print("WARNING: GEMINI_API_KEY environment variable not set or is placeholder.")
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
+        api_key = os.environ.get("GEMINI_API_KEY")
+        
+        if not api_key:
+            print("CRITICAL ERROR: GEMINI_API_KEY is missing in environment variables!")
+        else:
+            print(f"Gemini API Key found (Length: {len(api_key)}). Configuring...")
+
+        try:
+            genai.configure(api_key=api_key)
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
+            print("Gemini Model configured successfully.")
+        except Exception as e:
+            print(f"Gemini Configuration Failed: {e}")
 
     def _load_data(self):
         with open(self.data_path, 'r') as f:
