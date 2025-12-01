@@ -10,10 +10,11 @@ class FoodClassifier:
         self.classes = list(self.food_data.keys())
         
         # Configure Gemini API
-        # NOTE: In production, use os.environ.get("GEMINI_API_KEY")
-        api_key = "AIzaSyC-fx2XhicQiXCiua2qsjIKtpxk5YI4CQg" 
+        # Always use environment variables for API keys in production!
+        api_key = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE") # Placeholder for local testing
+        if not api_key or api_key == "YOUR_GEMINI_API_KEY_HERE":
+            print("WARNING: GEMINI_API_KEY environment variable not set or is placeholder.")
         genai.configure(api_key=api_key)
-        # Use the correct model name found from the list_models.py script
         self.model = genai.GenerativeModel('gemini-2.5-flash')
 
     def _load_data(self):

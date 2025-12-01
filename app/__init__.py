@@ -11,17 +11,24 @@ def create_app():
     app = Flask(__name__)
     
     # Configuration
+    # SECURITY WARNING: Change 'dev-key-secret-123' in production!
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-secret-123')
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 
     
     # MongoDB Connection
-    mongo_uri = os.environ.get('MONGODB_URI', 'mongodb+srv://AI_GEMINI:db123@cluster0.fmugkof.mongodb.net/calorielens?retryWrites=true&w=majority&appName=Cluster0')
+    # REQUIRED: Set MONGODB_URI env var (e.g. in Render or .env)
+    mongo_uri = os.environ.get('MONGODB_URI')
+    if not mongo_uri:
+        print("WARNING: MONGODB_URI not set. Using local SQLite fallback or failing.")
+        mongo_uri = 'mongodb://localhost:27017/titan_local' # Safe local default
+    
     connect(host=mongo_uri)
 
     # Google OAuth Config
-    app.config['GOOGLE_CLIENT_ID'] = os.environ.get('GOOGLE_CLIENT_ID', '493532333175-qvrnmh9734q0n2ir09o83ge003ldckpb.apps.googleusercontent.com')
-    app.config['GOOGLE_CLIENT_SECRET'] = os.environ.get('GOOGLE_CLIENT_SECRET', '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')
+    # REQUIRED: Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars
+    app.config['GOOGLE_CLIENT_ID'] = os.environ.get('GOOGLE_CLIENT_ID', 'YOUR_GOOGLE_CLIENT_ID')
+    app.config['GOOGLE_CLIENT_SECRET'] = os.environ.get('GOOGLE_CLIENT_SECRET', 'YOUR_GOOGLE_CLIENT_SECRET')
     
     oauth.init_app(app)
     oauth.register(
