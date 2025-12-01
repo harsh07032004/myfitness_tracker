@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TITAN TRAINING</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/maniac.css') }}">
+    <style>
+        .timer-ring {
+            width: 220px; height: 220px; 
+            border: 4px solid #330000;
+            border-radius: 50%; margin: 0 auto; display: flex;
+            align-items: center; justify-content: center;
+            position: relative;
+            background: radial-gradient(circle, #1a0505 0%, #000 100%);
+            box-shadow: inset 0 0 30px rgba(255, 0, 0, 0.2);
+        }
+        .timer-active { 
+            border-color: var(--neon-blue); 
+            box-shadow: 0 0 30px var(--neon-blue), inset 0 0 20px rgba(255, 60, 0, 0.3); 
+        }
+        
+        .stat-box { background: #0f0505; border: 1px solid #331111; border-radius: 0; padding: 15px; text-align: center; transform: skew(-5deg); }
+        .stat-val { font-family: 'Russo One'; font-size: 1.8rem; }
+        
+        .btn-start {
+            width: 90px; height: 90px; border-radius: 0; font-size: 1.5rem;
+            background: var(--neon-blue); border: 2px solid #fff; color: black; 
+            font-family: 'Russo One'; transform: skew(-10deg);
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+        .btn-stop {
+            width: 90px; height: 90px; border-radius: 0; font-size: 1.5rem;
+            background: var(--neon-pink); border: 2px solid #fff; color: white; 
+            font-family: 'Russo One'; transform: skew(-10deg);
+            box-shadow: 0 0 20px var(--neon-pink);
+        }
+        
+        .mode-btn {
+            flex: 1; font-family: 'Russo One'; border-radius: 0; border: 1px solid #444;
+            background: #111; color: #888; letter-spacing: 1px;
+        }
+        .mode-btn.active {
+            background: var(--neon-blue); color: black; border-color: white;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+        
+        /* Exercise Grid */
+        .gym-grid {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+            max-height: 300px; overflow-y: auto; padding: 5px;
+        }
+        .gym-card {
+            background: #111; border: 1px solid #333; border-radius: 8px;
+            padding: 10px; text-align: center; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .gym-card:hover { border-color: #666; }
+        .gym-card.selected {
+            border-color: var(--neon-blue); background: #00111a;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+        .gym-icon { font-size: 2rem; margin-bottom: 5px; color: #666; }
+        .gym-card.selected .gym-icon { color: var(--neon-blue); }
+        .gym-name { font-size: 0.7rem; text-transform: uppercase; font-weight: bold; color: #aaa; line-height: 1.2; }
+        .gym-card.selected .gym-name { color: white; }
+    </style>
+  </head>
+  <body>
+    
+    <div class="container py-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a href="/" class="text-white text-decoration-none"><i class="bi bi-caret-left-fill fs-3"></i> HUB</a>
+            <h4 class="m-0 text-neon-blue fst-italic">COMBAT MODE</h4>
+            <i class="bi bi-gpu-card fs-4 text-muted"></i>
+        </div>
+
+        <!-- Timer Circle -->
+        <div class="timer-ring" id="timerRing">
+            <div class="text-center">
+                <div class="display-2 fw-bold text-white" id="timerDisplay" style="font-family: 'Russo One'; text-shadow: 0 0 10px black;">00:00</div>
+                <small class="text-neon-pink text-uppercase fw-bold" id="statusText">SYSTEM IDLE</small>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="mt-4 px-3">
+            <!-- Tab Switcher -->
+            <div class="d-flex mb-3">
+                <button class="btn mode-btn active" id="tabCardio" onclick="switchTab('cardio')">CARDIO / GPS</button>
+                <button class="btn mode-btn" id="tabGym" onclick="switchTab('gym')">GYM LIFT</button>
+            </div>
+
+            <!-- Cardio Controls -->
+            <div id="cardioControls">
+                <div class="btn-group w-100">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="modeWalk" onclick="setMode('walk')">WALK</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm active" id="modeRun" onclick="setMode('run')">RUN</button>
+                </div>
+                <p class="text-muted small mt-2 text-center fst-italic" id="gpsHint">GPS AUTO-ENGAGE</p>
+            </div>
+
+            <!-- Gym Controls (Grid) -->
+            <div id="gymControls" style="display:none;">
+                <div class="gym-grid mb-3">
+                    {% for name, details in gym_data.items() %}
+                    <div class="gym-card" onclick="selectGymExercise(this, '{{ name }}', {{ details.met }})">
+                        <i class="bi {{ details.icon }} gym-icon"></i>
+                        <div class="gym-name">{{ name }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Intensity Slider -->
+                <div class="p-3 border border-secondary rounded bg-black">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small fw-bold">INTENSITY (MET)</span>
+                        <span class="text-neon-blue fw-bold" id="metDisplay">5.0</span>
+                    </div>
+                    <input type="range" class="form-range" min="1" max="15" step="0.1" id="metSlider" oninput="updateMet(this.value)">
+                </div>
+
+                <input type="hidden" id="selectedExerciseName" value="Manual Lift">
+                <input type="hidden" id="selectedExerciseMet" value="5.0">
+            </div>
+        </div>
+
+        <!-- Real-time Stats -->
+        <div class="row g-2 mt-4">
+            <div class="col-4">
+                <div class="stat-box">
+                    <div class="stat-val text-neon-blue" id="val1">0.00</div>
+                    <div class="stat-label text-muted small" id="lbl1">KM</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="stat-box">
+                    <div class="stat-val text-white" id="val2">0</div>
+                    <div class="stat-label text-muted small" id="lbl2">STEPS</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="stat-box">
+                    <div class="stat-val text-neon-pink" id="val3">0</div>
+                    <div class="stat-label text-muted small">KCAL BURNED</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-center gap-4 mt-5 align-items-center flex-column">
+            <!-- Set Button (Gym Only, Visible when running) -->
+            <button id="setBtn" class="btn btn-outline-light w-100 py-3 rounded-0 d-none" onclick="logSet()" style="font-family: 'Russo One'; border: 1px solid #444; background: #111;">
+                <i class="bi bi-plus-circle-fill text-neon-blue me-2"></i> LOG SET COMPLETE (+15 KCAL)
+            </button>
+            
+            <div class="d-flex gap-4">
+                <button class="btn-start" id="startBtn" onclick="startSession()">GO</button>
+                <button class="btn-stop d-none" id="stopBtn" onclick="stopSession()">STOP</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Form -->
+    <form method="POST" id="saveForm" style="display:none;">
+        <input type="hidden" name="activity" id="formActivity">
+        <input type="hidden" name="duration" id="formDuration">
+        <input type="hidden" name="calories" id="formCalories">
+    </form>
+
+    <script>
+        // Core Vars
+        let timerInterval; let startTime; let watchId = null;
+        let totalDist = 0; let totalSteps = 0; let totalCals = 0; 
+        let totalSets = 0; // New Sets Counter
+        let lastLat = null; let lastLon = null;
+        let currentTab = 'cardio'; 
+        let currentCardioMode = 'run';
+        let useGps = true; 
+        const USER_WEIGHT = {{ user_weight or 70 }};
+        const PACE = { walk: { speedKmh: 4.5, stepsPerMin: 80, calsPerMin: 4 }, run:  { speedKmh: 8.0, stepsPerMin: 140, calsPerMin: 10 } };
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            switchTab('cardio'); 
+            setMode('run');
+            // Auto-select first gym item to prevent error
+            let firstCard = document.querySelector('.gym-card');
+            if(firstCard) firstCard.click();
+        });
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tabCardio').className = tab === 'cardio' ? 'btn mode-btn active' : 'btn mode-btn';
+            document.getElementById('tabGym').className = tab === 'gym' ? 'btn mode-btn active' : 'btn mode-btn';
+            
+            document.getElementById('cardioControls').style.display = tab === 'cardio' ? 'block' : 'none';
+            document.getElementById('gymControls').style.display = tab === 'gym' ? 'block' : 'none';
+            
+            if (tab === 'gym') {
+                document.getElementById('lbl1').innerText = "MET";
+                document.getElementById('lbl2').innerText = "SETS";
+                let currentMet = document.getElementById('selectedExerciseMet').value;
+                document.getElementById('val1').innerText = parseFloat(currentMet).toFixed(1);
+                document.getElementById('val2').innerText = totalSets;
+            } else { 
+                document.getElementById('lbl1').innerText = "KM";
+                document.getElementById('lbl2').innerText = "STEPS";
+                document.getElementById('val1').innerText = totalDist.toFixed(2);
+                document.getElementById('val2').innerText = Math.floor(totalSteps);
+            }
+        }
+
+        function setMode(mode) {
+            currentCardioMode = mode;
+            document.getElementById('modeWalk').className = mode === 'walk' ? 'btn btn-outline-secondary btn-sm active' : 'btn btn-outline-secondary btn-sm';
+            document.getElementById('modeRun').className = mode === 'run' ? 'btn btn-outline-danger btn-sm active' : 'btn btn-outline-danger btn-sm';
+        }
+
+        function selectGymExercise(card, name, met) {
+            // UI Highlight
+            document.querySelectorAll('.gym-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            
+            // Logic Update
+            document.getElementById('selectedExerciseName').value = name;
+            updateMet(met); // Set slider to default
+        }
+
+        function updateMet(val) {
+            // Update Input & UI
+            document.getElementById('selectedExerciseMet').value = val;
+            document.getElementById('metSlider').value = val;
+            document.getElementById('metDisplay').innerText = parseFloat(val).toFixed(1);
+            
+            // Update live dashboard if running
+            if (currentTab === 'gym') {
+                document.getElementById('val1').innerText = parseFloat(val).toFixed(1);
+            }
+        }
+
+        function startSession() {
+            startTime = Date.now();
+            document.getElementById('startBtn').classList.add('d-none');
+            document.getElementById('stopBtn').classList.remove('d-none');
+            document.getElementById('timerRing').classList.add('timer-active');
+            
+            if (currentTab === 'cardio') {
+                if (navigator.geolocation) {
+                    document.getElementById('statusText').innerText = "GPS SCANNING";
+                    watchId = navigator.geolocation.watchPosition(onGpsSuccess, onGpsFail, { enableHighAccuracy: true });
+                } else { onGpsFail(); }
+            } else { 
+                document.getElementById('statusText').innerText = "LIFTING MODE";
+                useGps = false; 
+                document.getElementById('setBtn').classList.remove('d-none'); // Show Set Button
+            }
+            
+            timerInterval = setInterval(gameLoop, 1000);
+        }
+
+        function logSet() {
+            totalSets++;
+            totalCals += 15; // Bonus 15 kcal per set
+            document.getElementById('val2').innerText = totalSets;
+            document.getElementById('val3').innerText = Math.floor(totalCals);
+            
+            // Visual Feedback
+            let btn = document.getElementById('setBtn');
+            let origText = btn.innerHTML;
+            btn.innerHTML = "<span class='text-neon-green'>SET RECORDED!</span>";
+            setTimeout(() => btn.innerHTML = origText, 1000);
+        }
+
+        function onGpsSuccess(pos) {
+            if(currentTab !== 'cardio') return;
+            useGps = true; 
+            document.getElementById('statusText').innerText = "GPS TRACKING";
+            document.getElementById('statusText').className = "text-neon-green small fw-bold";
+            document.getElementById('gpsHint').style.display = 'none';
+
+            let lat = pos.coords.latitude; let lon = pos.coords.longitude;
+            if (lastLat) {
+                let d = getDist(lastLat, lastLon, lat, lon);
+                if (d > 0.002) { 
+                    totalDist += d; 
+                    totalSteps += Math.floor((d * 1000) / 0.75); 
+                    totalCals += d * 60; 
+                }
+            }
+            lastLat = lat; lastLon = lon;
+        }
+
+        function onGpsFail() {
+            if (currentTab === 'cardio' && useGps) { 
+                useGps = false; 
+                document.getElementById('statusText').innerText = "SIMULATION ACTIVE";
+                document.getElementById('statusText').className = "text-neon-pink small fw-bold";
+            }
+        }
+
+        function gameLoop() {
+            // Timer
+            let delta = Math.floor((Date.now() - startTime) / 1000);
+            let m = Math.floor(delta / 60); let s = delta % 60;
+            document.getElementById('timerDisplay').innerText = (m<10?"0"+m:m) + ":" + (s<10?"0"+s:s);
+
+            if (currentTab === 'cardio') {
+                // Cardio Logic
+                if (!useGps) {
+                    let stats = PACE[currentCardioMode];
+                    totalDist += stats.speedKmh / 3600; 
+                    totalSteps += stats.stepsPerMin / 60; 
+                    totalCals += stats.calsPerMin / 60;
+                }
+                document.getElementById('val1').innerText = totalDist.toFixed(2);
+                document.getElementById('val2').innerText = Math.floor(totalSteps);
+            } else { 
+                // Gym Logic
+                let met = parseFloat(document.getElementById('selectedExerciseMet').value);
+                let calsPerSec = ((met * USER_WEIGHT * 3.5) / 200) / 60;
+                totalCals += calsPerSec;
+                // Sets are manually updated now
+            }
+            document.getElementById('val3').innerText = Math.floor(totalCals);
+        }
+
+        function stopSession() {
+            clearInterval(timerInterval); 
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            
+            document.getElementById('setBtn').classList.add('d-none'); // Hide button
+            
+            let durationMins = Math.ceil((Date.now() - startTime) / 60000);
+            if (durationMins < 1) durationMins = 1;
+
+            let activityName = "";
+            if (currentTab === 'cardio') {
+                activityName = useGps ? "Outdoor Run (GPS)" : `Indoor ${currentCardioMode.toUpperCase()}`;
+            } else {
+                let baseName = document.getElementById('selectedExerciseName').value;
+                activityName = `${baseName} (${totalSets} Sets)`;
+            }
+
+            document.getElementById('formActivity').value = activityName;
+            document.getElementById('formDuration').value = durationMins;
+            document.getElementById('formCalories').value = Math.floor(totalCals);
+            document.getElementById('saveForm').submit();
+        }
+
+        function getDist(lat1,lon1,lat2,lon2) {
+            var R = 6371; var dLat = deg2rad(lat2-lat1); var dLon = deg2rad(lon2-lon1); 
+            var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); return R * c; 
+        }
+        function deg2rad(deg) { return deg * (Math.PI/180) }
+    </script>
+  </body>
+</html>

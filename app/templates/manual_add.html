@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>INPUT DATA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/maniac.css') }}">
+    <style>
+        body { background: var(--bg-dark); }
+        .form-control, .form-select {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            color: var(--text-main);
+        }
+        .form-control::placeholder {
+            color: var(--text-dim);
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #1a1a1a;
+            color: white;
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 0 0.25rem rgba(0, 243, 255, 0.25);
+        }
+        .indeterminate-bar { width: 50%; animation: shuttle 1.5s infinite ease-in-out; }
+        @keyframes shuttle { 0% { margin-left: -50%; } 100% { margin-left: 100%; } }
+    </style>
+  </head>
+  <body>
+    
+    <!-- Loading Overlay -->
+    <div id="loader" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column; align-items: center; justify-content: center;">
+        <div class="spinner-border text-neon-blue mb-4" style="width: 5rem; height: 5rem; border-width: 6px;" role="status"></div>
+        <h2 class="text-neon-blue fst-italic mb-2" id="loadText">INITIALIZING SCAN...</h2>
+        <div class="progress w-50 bg-dark border border-secondary" style="height: 4px;">
+            <div class="progress-bar bg-neon-blue indeterminate-bar"></div>
+        </div>
+    </div>
+
+    <div class="container py-5">
+        <h2 class="text-neon-blue fst-italic mb-2">MANUAL INPUT</h2>
+        <p class="text-muted small mb-4">LOG FUEL DIRECTLY INTO SYSTEM</p>
+        
+        <form method="POST" id="textForm" onsubmit="startLoader(event)">
+            <div class="mb-4">
+                <textarea name="food_text" class="form-control form-control-lg" rows="5" placeholder="E.G. 2 EGGS, 1 BREAD SLICE, 100G CHICKEN" style="background-color: #0d0d0d; border-color: #555; color: white;" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 btn-lg shadow-lg">ANALYZE & LOG</button>
+        </form>
+        
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-outline-secondary text-white border-secondary w-100 rounded-0 shadow">CANCEL MISSION</a>
+        </div>
+    </div>
+
+    <script>
+        function startLoader(e) {
+            // Check if valid
+            const text = document.querySelector('textarea').value;
+            if(!text.trim()) return;
+
+            document.getElementById('loader').style.display = 'flex';
+            const texts = [
+                "PARSING TEXT INPUT...",
+                "CALCULATING MACRO DENSITY...",
+                "IDENTIFYING FOOD ITEMS...",
+                "SYNCING WITH TITAN CORE...",
+                "FINALIZING REPORT..."
+            ];
+            let i = 0;
+            setInterval(() => {
+                document.getElementById('loadText').innerText = texts[i % texts.length];
+                i++;
+            }, 2000); // Slowed to 2s
+        }
+    </script>
+  </body>
+</html>

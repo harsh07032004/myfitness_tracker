@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TITAN MODE</title>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#0a0a0a">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/maniac.css') }}">
+  </head>
+  <body>
+    
+    <!-- Top Summary -->
+    <div class="container pt-4 pb-2">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="text-neon-blue mb-0" style="font-style: italic;">DASHBOARD</h2>
+                {% if remaining >= 0 %}
+                    <p class="text-muted mb-0 small">{{ remaining }} KCAL LEFT</p>
+                {% else %}
+                    <p class="text-neon-pink mb-0 small fw-bold pop-effect"><i class="bi bi-exclamation-triangle-fill"></i> OVER LIMIT: {{ remaining|abs }}</p>
+                {% endif %}
+            </div>
+            <a href="/profile" class="btn btn-dark border-secondary rounded-circle p-2 shadow">
+                <i class="bi bi-person-bounding-box text-white"></i>
+            </a>
+        </div>
+        
+        <!-- Main Rings -->
+        <div class="row text-center g-3 mb-4 align-items-center">
+            <div class="col-4">
+                <h6 class="text-muted small">IN</h6>
+                <h2 class="text-white mb-0">{{ cals_eaten }}</h2>
+            </div>
+            <div class="col-4">
+                <div style="position: relative; width: 120px; height: 120px; margin: 0 auto;">
+                     <svg width="120" height="120" viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="54" fill="none" stroke="#333" stroke-width="8" />
+                        {% if remaining >= 0 %}
+                            <!-- Normal Blue Ring -->
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#00f3ff" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="{{ 339.292 - (339.292 * (net_cals / user.goal_calories)) }}"
+                                    transform="rotate(-90 60 60)" stroke-linecap="round" style="filter: drop-shadow(0 0 5px #00f3ff);" />
+                        {% else %}
+                            <!-- Over Limit Red Ring (Full) -->
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#ff0000" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="0"
+                                    transform="rotate(-90 60 60)" stroke-linecap="round" style="filter: drop-shadow(0 0 10px #ff0000); animation: pulse 1s infinite;" />
+                        {% endif %}
+                     </svg>
+                     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                         <small class="text-muted" style="font-size: 0.7rem;">NET</small><br>
+                         <span class="fw-bold fs-3 text-white">{{ net_cals }}</span>
+                     </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <h6 class="text-muted small">BURN</h6>
+                <h2 class="text-neon-pink mb-0">{{ cals_burned }}</h2>
+            </div>
+        </div>
+
+        <!-- Secondary Stats -->
+        <div class="row g-3 mb-4">
+            <div class="col-6">
+                <div class="card p-3 h-100 card-stat" style="border-left-color: var(--neon-green);">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted small">PROTEIN</span>
+                        <span class="text-neon-green fw-bold">{{ protein|int }}g</span>
+                    </div>
+                    <div class="progress mt-2" style="height: 6px; background: #222;">
+                        <div class="progress-bar bg-success" style="width: {{ (protein / user.goal_protein)*100 }}%; box-shadow: 0 0 10px #00ff9d;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <!-- Hydration Card with Deep Dive Animation -->
+                <div class="card p-3 h-100 card-stat position-relative overflow-hidden" style="border-left-color: var(--neon-blue); background: #0a0a0a;">
+                    
+                    <!-- Liquid Background Layer -->
+                    <div id="liquidFill" class="position-absolute bottom-0 start-0 w-100" 
+                         style="background-color: var(--neon-blue); height: {{ (water / (user.goal_water or 1)) * 100 }}%; transition: height 0.5s ease-in-out; z-index: 0; box-shadow: 0 0 35px var(--neon-blue); filter: brightness(1.7);">
+                    </div>
+                    
+                    <!-- Content Layer (On Top) -->
+                    <div class="position-relative z-1 h-100 d-flex flex-column justify-content-between">
+                        <div class="text-center mb-1">
+                            <span class="text-muted small fw-bold ls-2">H2O LEVELS</span>
+                        </div>
+                        
+                        <div class="d-flex align-items-center justify-content-between px-2 flex-grow-1">
+                            <!-- Down -->
+                            <span id="removeWaterBtn" class="text-decoration-none text-neon-pink hover-glow" style="font-size: 2rem; cursor: pointer;">
+                                <i class="bi bi-caret-left-fill"></i>
+                            </span>
+                            
+                            <!-- Value -->
+                            <div class="text-center">
+                                <h1 id="waterCount" class="mb-0 text-white glow-text" style="font-family: 'Russo One'; font-size: 3rem; line-height: 1; text-shadow: 0 0 15px var(--neon-blue);">
+                                    {{ water }}
+                                </h1>
+                                <small class="text-muted fw-bold" style="font-size: 0.7rem;">TARGET: <span id="waterGoal">{{ user.goal_water }}</span></small>
+                            </div>
+                            
+                            <!-- Up -->
+                            <span id="addWaterBtn" class="text-decoration-none text-neon-blue hover-glow" style="font-size: 2rem; cursor: pointer;">
+                                <i class="bi bi-caret-right-fill"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Delete Modal -->
+    <div id="deleteModal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; align-items: center; justify-content: center;">
+        <div class="card p-4 text-center border border-danger shadow-lg" style="max-width: 300px; background: #111;">
+            <div class="text-neon-pink fs-1 mb-2"><i class="bi bi-emoji-neutral"></i></div>
+            <h4 class="text-white fst-italic">WAIT A SECOND...</h4>
+            <p class="text-muted small mb-4">"DID YOU REALLY NOT EAT THIS? HMMM... I DON'T DOUBT YOU, BUT THE SYSTEM IS WATCHING. 🤨"</p>
+            
+            <div class="d-flex gap-2">
+                <button onclick="closeDeleteModal()" class="btn btn-outline-secondary w-50 rounded-0">NO, KEEP IT</button>
+                <a id="confirmDeleteBtn" href="#" class="btn btn-danger w-50 rounded-0">YEAH, DELETE</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        function confirmDelete(url) {
+            document.getElementById('deleteModal').style.display = 'flex';
+            document.getElementById('confirmDeleteBtn').href = url;
+        }
+        
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        // ... [Previous Scripts] ...
+    </script>
+
+    <!-- Logs Section -->
+    <div class="container">
+        
+        <!-- Food Log -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="text-white mb-0">FUEL LOG</h5>
+            <a href="/manual_add" class="text-neon-blue text-decoration-none small fw-bold">INPUT DATA ></a>
+        </div>
+        {% for item in food_log %}
+        <div class="card mb-2 p-2 d-flex flex-row align-items-center" style="border-left: 3px solid var(--neon-green);">
+            <div class="log-img-container me-3">
+                {% if item.image_file %}
+                <img src="{{ url_for('static', filename='uploads/' + item.image_file) }}" class="log-img">
+                {% else %}
+                <i class="bi bi-lightning-charge-fill text-muted fs-4"></i>
+                {% endif %}
+            </div>
+            <div class="flex-grow-1">
+                <div class="fw-bold text-white" style="font-size: 1.1rem; line-height: 1;">{{ item.name.upper() }}</div>
+                <div class="text-neon-green small">{{ item.calories }} KCAL</div>
+            </div>
+            <button onclick="confirmDelete('/delete_food/{{ item.id }}')" class="btn text-secondary p-2"><i class="bi bi-x-lg"></i></button>
+        </div>
+        {% else %}
+        <p class="text-muted small text-center py-2 fst-italic">NO FUEL DETECTED</p>
+        {% endfor %}
+
+        <!-- Exercise Log -->
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+            <h5 class="text-white mb-0">COMBAT LOG</h5>
+            <a href="/workout" class="text-neon-pink text-decoration-none small fw-bold">START MISSION ></a>
+        </div>
+        {% for item in exercise_log %}
+        <div class="card mb-2 p-2 d-flex flex-row align-items-center" style="border-left: 3px solid var(--neon-pink);">
+            <div class="rounded me-3 bg-dark d-flex align-items-center justify-content-center border border-secondary" style="width: 45px; height: 45px;">
+                <i class="bi bi-fire text-neon-pink"></i>
+            </div>
+            <div class="flex-grow-1">
+                <div class="fw-bold text-white" style="font-size: 1.1rem; line-height: 1;">{{ item.activity_name.upper() }}</div>
+                <div class="text-neon-pink small">{{ item.duration_minutes }} MIN • -{{ item.calories_burned }} KCAL</div>
+            </div>
+             <button onclick="confirmDelete('/delete_exercise/{{ item.id }}')" class="btn text-secondary p-2"><i class="bi bi-x-lg"></i></button>
+        </div>
+        {% else %}
+        <p class="text-muted small text-center py-2 fst-italic">NO MISSIONS COMPLETE</p>
+        {% endfor %}
+    </div>
+
+    <!-- Chat Widget (Hidden) -->
+    <div id="chat-widget" style="display:none; position: fixed; bottom: 100px; right: 20px; width: 350px; height: 500px; background: #1a1a1a; border: 1px solid var(--neon-blue); border-radius: 15px; box-shadow: 0 0 30px rgba(0, 243, 255, 0.15); z-index: 2000; flex-direction: column; overflow: hidden;">
+        <div class="p-3 text-black fw-bold d-flex justify-content-between align-items-center" style="background: var(--neon-blue);">
+            <span class="m-0" style="font-family: 'Russo One';">SYSTEM COACH</span>
+            <button onclick="toggleChat()" class="btn btn-sm text-black"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div id="chat-box" class="flex-grow-1 p-3" style="overflow-y: auto; background: #111;">
+            <div class="d-flex mb-2">
+                <div class="text-neon-blue p-2 rounded border border-secondary small" style="max-width: 85%; background: #000;">
+                    SYSTEM ONLINE. AWAITING INPUT.
+                </div>
+            </div>
+        </div>
+        <div class="p-2 border-top border-secondary bg-dark d-flex">
+            <input type="text" id="chat-input" class="form-control bg-black text-white border-secondary" placeholder="Command..." onkeypress="handleEnter(event)">
+            <button onclick="sendMessage()" class="btn btn-primary ms-2"><i class="bi bi-arrow-return-left"></i></button>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <button onclick="toggleChat()" class="btn fab-btn shadow-lg" style="bottom: 170px; background: #222; color: white; border-color: #444; box-shadow: none;">
+        <i class="bi bi-chat-square-text-fill"></i>
+    </button>
+
+    <!-- Loading Overlay -->
+    <div id="loader" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; flex-direction: column; align-items: center; justify-content: center;">
+        <div class="spinner-border text-neon-blue mb-4" style="width: 5rem; height: 5rem; border-width: 6px;" role="status"></div>
+        <h2 class="text-neon-blue fst-italic mb-2" id="loadText">INITIALIZING SCAN...</h2>
+        <div class="progress w-50 bg-dark border border-secondary" style="height: 4px;">
+            <div class="progress-bar bg-neon-blue indeterminate-bar"></div>
+        </div>
+    </div>
+
+    <!-- Script for Loader Text -->
+    <script>
+        function startScan() {
+            document.getElementById('loader').style.display = 'flex';
+            const texts = [
+                "EXTRACTING VISUAL DATA...",
+                "CALCULATING MACRO DENSITY...",
+                "DETECTING PROTEIN STRUCTURES...",
+                "SYNCING WITH TITAN CORE...",
+                "FINALIZING REPORT..."
+            ];
+            let i = 0;
+            setInterval(() => {
+                document.getElementById('loadText').innerText = texts[i % texts.length];
+                i++;
+            }, 2000);
+            document.getElementById('camForm').submit();
+        }
+    </script>
+
+    <form action="/predict" method="post" enctype="multipart/form-data" id="camForm">
+        <input type="file" name="file" accept="image/*" capture="environment" id="camInput" hidden onchange="startScan()">
+    </form>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+        <div class="row text-center m-0">
+            <div class="col"><a href="/" class="text-decoration-none nav-active"><i class="bi bi-grid-fill nav-icon"></i><br><small>HUB</small></a></div>
+            <div class="col"><a href="/workout" class="text-decoration-none text-muted"><i class="bi bi-activity nav-icon"></i><br><small>TRAIN</small></a></div>
+            <div class="col"><a href="/stats" class="text-decoration-none text-muted"><i class="bi bi-bar-chart-fill nav-icon"></i><br><small>STATS</small></a></div>
+        </div>
+    </div>
+
+    <style>
+        .indeterminate-bar { width: 50%; animation: shuttle 1.5s infinite ease-in-out; }
+        @keyframes shuttle { 0% { margin-left: -50%; } 100% { margin-left: 100%; } }
+        /* Fix Image Overflow */
+        .log-img-container {
+            width: 50px; height: 50px; flex-shrink: 0; 
+            border-radius: 8px; overflow: hidden; border: 1px solid #444;
+            display: flex; align-items: center; justify-content: center;
+            background: #000;
+        }
+        .log-img { width: 100%; height: 100%; object-fit: cover; }
+    </style>
+    <button onclick="document.getElementById('camInput').click()" class="btn fab-btn">
+        <i class="bi bi-camera"></i>
+    </button>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+        <div class="row text-center m-0">
+            <div class="col"><a href="/" class="text-decoration-none nav-active"><i class="bi bi-grid-fill nav-icon"></i><br><small>HUB</small></a></div>
+            <div class="col"><a href="/workout" class="text-decoration-none text-muted"><i class="bi bi-activity nav-icon"></i><br><small>TRAIN</small></a></div>
+            <div class="col"><a href="/stats" class="text-decoration-none text-muted"><i class="bi bi-bar-chart-fill nav-icon"></i><br><small>STATS</small></a></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Update Water Count Instantly
+        async function updateWater(action) {
+            try {
+                const response = await fetch(`/${action}_water`);
+                const data = await response.json(); // Flask route should return new water count and goal
+
+                if (data.success) {
+                    const newWaterCount = data.water;
+                    const waterGoal = data.goal;
+
+                    document.getElementById('waterCount').innerText = newWaterCount;
+                    document.getElementById('waterGoal').innerText = waterGoal;
+
+                    // Update Liquid Fill Animation
+                    const fillPercentage = (newWaterCount / waterGoal) * 100;
+                    document.getElementById('liquidFill').style.height = `${fillPercentage}%`;
+                }
+            } catch (error) {
+                console.error('Error updating water:', error);
+            }
+        }
+        document.getElementById('addWaterBtn').addEventListener('click', () => updateWater('add'));
+        document.getElementById('removeWaterBtn').addEventListener('click', () => updateWater('remove'));
+
+        function toggleChat() {
+            let widget = document.getElementById('chat-widget');
+            widget.style.display = widget.style.display === 'none' ? 'flex' : 'none';
+        }
+        function handleEnter(e) { if (e.key === 'Enter') sendMessage(); }
+        async function sendMessage() {
+            let input = document.getElementById('chat-input');
+            let msg = input.value.trim();
+            if (!msg) return;
+            
+            let box = document.getElementById('chat-box');
+            box.innerHTML += `<div class="d-flex justify-content-end mb-2"><div class="bg-dark border border-secondary text-white p-2 rounded small" style="max-width: 85%;">${msg.toUpperCase()}</div></div>`;
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+            
+            try {
+                let res = await fetch('/chat', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: msg})
+                });
+                let data = await res.json();
+                box.innerHTML += `<div class="d-flex mb-2"><div class="text-neon-blue p-2 rounded border border-secondary small" style="max-width: 85%; background: #000;">${data.reply.toUpperCase()}</div></div>`;
+                if (data.action !== 'none') setTimeout(() => location.reload(), 1500);
+            } catch (err) { box.innerHTML += `<div class="text-danger small">CONNECTION ERR</div>`; }
+            box.scrollTop = box.scrollHeight;
+        }
+    </script>
+  </body>
+</html>

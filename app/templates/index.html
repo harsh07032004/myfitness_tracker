@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CalorieLens AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    
+    <div class="container d-flex flex-column min-vh-100 justify-content-center align-items-center">
+        <div class="text-center mb-5 fade-in">
+            <h1 class="display-4 fw-bold text-primary">Calorie<span class="text-dark">Lens</span> AI</h1>
+            <p class="lead text-muted">Instant Calorie Tracking for Indian Cuisine</p>
+        </div>
+
+        <div class="card shadow-lg p-4 border-0 rounded-4 upload-card fade-in-up">
+            <div class="card-body text-center">
+                <div class="mb-4">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1048/1048315.png" alt="Camera" width="80" class="mb-3">
+                    <h5 class="card-title">Snap or Upload</h5>
+                    <p class="card-text text-muted small">Take a photo of your food to analyze it.</p>
+                </div>
+                
+                <form action="/predict" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <input class="form-control form-control-lg" type="file" name="file" accept="image/*" capture="environment" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill shadow-sm">
+                        Analyze Food
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <footer class="mt-5 text-muted small">
+            &copy; 2025 CalorieLens AI
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

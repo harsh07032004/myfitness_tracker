@@ -1,0 +1,13 @@
+{
+    "Weight Lifting: General": {"met": 3.5, "icon": "bi-hdd-stack-fill"},
+    "Weight Lifting: Heavy": {"met": 6.0, "icon": "bi-hammer"},
+    "Bench Press": {"met": 5.5, "icon": "bi-align-bottom"},
+    "Squats": {"met": 5.0, "icon": "bi-arrow-down-square-fill"},
+    "Deadlifts": {"met": 6.0, "icon": "bi-box-arrow-up"},
+    "HIIT / CrossFit": {"met": 8.0, "icon": "bi-lightning-fill"},
+    "Pushups / Pullups": {"met": 3.8, "icon": "bi-person-arms-up"},
+    "Yoga": {"met": 2.5, "icon": "bi-flower1"},
+    "Treadmill": {"met": 7.0, "icon": "bi-speedometer2"},
+    "Elliptical": {"met": 5.0, "icon": "bi-circle-half"},
+    "Stair Climber": {"met": 9.0, "icon": "bi-bar-chart-steps"}
+}

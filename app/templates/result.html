@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Result - CalorieLens AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <a href="/" class="btn btn-outline-secondary rounded-pill">&larr; Scan Another</a>
+                    <h5 class="m-0 fw-bold text-primary">Analysis Report</h5>
+                </div>
+
+                <!-- Food Image -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 overflow-hidden">
+                    <img src="{{ url_for('static', filename='uploads/' + image_filename) }}" class="card-img-top food-img" alt="Uploaded Food">
+                    <div class="card-body text-center bg-light">
+                        <span class="badge bg-success mb-2">Detected</span>
+                        <h2 class="card-title fw-bold mb-0">{{ dish }}</h2>
+                    </div>
+                </div>
+
+                <!-- Nutrition Info -->
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="p-3 border rounded-4 text-center bg-white shadow-sm h-100">
+                            <h6 class="text-muted text-uppercase small fw-bold">Calories</h6>
+                            <h3 class="text-primary fw-bold mb-0">{{ nutrition.calories }}</h3>
+                            <small class="text-muted">kcal</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 border rounded-4 text-center bg-white shadow-sm h-100">
+                            <h6 class="text-muted text-uppercase small fw-bold">Protein</h6>
+                            <h4 class="mb-0">{{ nutrition.protein }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 border rounded-4 text-center bg-white shadow-sm h-100">
+                            <h6 class="text-muted text-uppercase small fw-bold">Carbs</h6>
+                            <h4 class="mb-0">{{ nutrition.carbs }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 border rounded-4 text-center bg-white shadow-sm h-100">
+                            <h6 class="text-muted text-uppercase small fw-bold">Fat</h6>
+                            <h4 class="mb-0">{{ nutrition.fat }}</h4>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-4 rounded-4 small" role="alert">
+                   <i class="bi bi-info-circle-fill"></i> Serving Size: <strong>{{ nutrition.unit }}</strong>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

@@ -1,0 +1,72 @@
+{
+    "Samosa": {
+        "calories": 262,
+        "unit": "1 piece",
+        "protein": "3.5g",
+        "carbs": "24g",
+        "fat": "17g"
+    },
+    "Butter Chicken": {
+        "calories": 438,
+        "unit": "1 serving (300g)",
+        "protein": "30g",
+        "carbs": "14g",
+        "fat": "28g"
+    },
+    "Masala Dosa": {
+        "calories": 380,
+        "unit": "1 piece",
+        "protein": "6g",
+        "carbs": "65g",
+        "fat": "10g"
+    },
+    "Idli": {
+        "calories": 39,
+        "unit": "1 piece",
+        "protein": "2g",
+        "carbs": "8g",
+        "fat": "0.1g"
+    },
+    "Dal Makhani": {
+        "calories": 320,
+        "unit": "1 serving",
+        "protein": "11g",
+        "carbs": "35g",
+        "fat": "16g"
+    },
+    "Chole Bhature": {
+        "calories": 450,
+        "unit": "1 serving",
+        "protein": "14g",
+        "carbs": "55g",
+        "fat": "20g"
+    },
+    "Paneer Tikka": {
+        "calories": 280,
+        "unit": "6 pieces",
+        "protein": "18g",
+        "carbs": "12g",
+        "fat": "18g"
+    },
+    "Biryani (Chicken)": {
+        "calories": 290,
+        "unit": "1 cup",
+        "protein": "15g",
+        "carbs": "38g",
+        "fat": "9g"
+    },
+    "Gulab Jamun": {
+        "calories": 150,
+        "unit": "1 piece",
+        "protein": "2g",
+        "carbs": "20g",
+        "fat": "7g"
+    },
+    "Rogan Josh": {
+        "calories": 550,
+        "unit": "1 serving",
+        "protein": "30g",
+        "carbs": "10g",
+        "fat": "45g"
+    }
+}

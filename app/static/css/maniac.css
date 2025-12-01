@@ -1,0 +1,189 @@
+@import url('https://fonts.googleapis.com/css2?family=Russo+One&family=Teko:wght@400;600&display=swap');
+
+:root {
+    --bg-dark: #050000; /* Deepest Red-Black */
+    --bg-card: #140a0a;
+    --neon-blue: #ff3c00; /* Replaced Blue with Fiery Orange */
+    --neon-pink: #ff0000; /* Pure Red */
+    --neon-green: #ff5e00; /* Amber/Orange for success instead of green */
+    --text-main: #ffffff;
+    --text-dim: #a06060;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Teko', sans-serif;
+    letter-spacing: 1px;
+    padding-bottom: 100px; /* Space for nav */
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Russo One', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* --- CARDS --- */
+.card {
+    background-color: var(--bg-card);
+    border: 1px solid #333;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    color: var(--text-main);
+}
+
+.card-stat {
+    border-left: 4px solid var(--neon-blue);
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.card-stat:active {
+    transform: scale(0.98);
+    box-shadow: 0 0 15px var(--neon-blue);
+}
+
+/* --- PROGRESS RINGS & BARS --- */
+.progress {
+    background-color: #333;
+    height: 8px;
+    border-radius: 4px;
+    overflow: visible;
+}
+
+.progress-bar {
+    background-color: var(--neon-green);
+    box-shadow: 0 0 10px var(--neon-green);
+    border-radius: 4px;
+}
+
+/* --- BUTTONS --- */
+.btn-primary, .btn-success, .btn-danger {
+    font-family: 'Russo One', sans-serif;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 0; /* Anime style sharp corners or slight rounding */
+    transform: skew(-10deg); /* Speed effect */
+}
+
+.btn-primary {
+    background: var(--neon-blue);
+    color: #000;
+    box-shadow: 0 0 10px var(--neon-blue);
+}
+
+.btn-success {
+    background: var(--neon-green);
+    color: #000;
+    box-shadow: 0 0 10px var(--neon-green);
+}
+
+.btn-danger {
+    background: var(--neon-pink);
+    color: #fff;
+    box-shadow: 0 0 10px var(--neon-pink);
+}
+
+.fab-btn {
+    position: fixed;
+    bottom: 90px; right: 20px;
+    width: 65px; height: 65px;
+    border-radius: 50%; /* Back to Circle */
+    background: var(--neon-blue);
+    color: black;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    box-shadow: 0 0 20px var(--neon-blue); /* Strong Glow */
+    border: 2px solid #fff;
+    z-index: 1000;
+    transform: none;
+    transition: transform 0.2s;
+}
+
+.fab-btn:active {
+    transform: scale(0.9);
+    box-shadow: 0 0 30px var(--neon-blue);
+}
+
+/* Chat Button Specifics */
+.fab-chat {
+    bottom: 170px;
+    background: var(--neon-pink);
+    box-shadow: 0 0 20px var(--neon-pink);
+}
+
+/* --- NAVIGATION --- */
+.bottom-nav {
+    position: fixed; bottom: 0; width: 100%;
+    background: rgba(22, 22, 22, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #333;
+    padding: 10px 0;
+    z-index: 999;
+}
+
+.nav-icon {
+    font-size: 1.5rem;
+    color: #555;
+    transition: color 0.2s;
+}
+
+.nav-active .nav-icon {
+    color: var(--neon-blue);
+    text-shadow: 0 0 10px var(--neon-blue);
+}
+
+.nav-active small {
+    color: var(--text-main);
+    font-weight: bold;
+}
+
+/* --- UTILS --- */
+/* --- ANIMATIONS --- */
+@keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); color: #fff; }
+    100% { transform: scale(1); }
+}
+
+.pop-effect {
+    animation: pop 0.3s ease-out;
+}
+
+/* Wave Animation for Water */
+.wave-container {
+    position: relative;
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: #111;
+    border: 2px solid var(--neon-blue);
+    overflow: hidden;
+    margin-left: 10px;
+}
+
+.wave {
+    position: absolute;
+    bottom: 0; left: 0; width: 200%; height: 200%;
+    background: var(--neon-blue);
+    opacity: 0.4;
+    border-radius: 40%;
+    animation: drift 5s infinite linear;
+    transform-origin: 50% 50%;
+}
+
+@keyframes drift {
+    from { transform: rotate(0deg); }
+    from { transform: rotate(360deg); }
+}
+
+.text-neon-blue { color: var(--neon-blue) !important; text-shadow: 0 0 5px var(--neon-blue); }
+.text-neon-pink { color: var(--neon-pink) !important; text-shadow: 0 0 5px var(--neon-pink); }
+.text-neon-green { color: var(--neon-green) !important; text-shadow: 0 0 5px var(--neon-green); }
+
+.hover-glow:hover {
+    filter: drop-shadow(0 0 8px var(--neon-blue));
+}
+.glow-text {
+    filter: drop-shadow(0 0 5px white);
+}
+
