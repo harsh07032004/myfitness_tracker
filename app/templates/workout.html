@@ -244,6 +244,7 @@
 
         function startSession() {
             startTime = Date.now();
+            lastTime = Date.now(); // Init for GPS calc
             document.getElementById('startBtn').classList.add('d-none');
             document.getElementById('stopBtn').classList.remove('d-none');
             document.getElementById('timerRing').classList.add('timer-active');
@@ -275,6 +276,8 @@
             setTimeout(() => btn.innerHTML = origText, 1000);
         }
 
+        let lastTime = null;
+
         function onGpsSuccess(pos) {
             if(currentTab !== 'cardio') return;
             useGps = true; 
@@ -282,28 +285,49 @@
             document.getElementById('statusText').className = "text-neon-green small fw-bold";
             document.getElementById('gpsHint').style.display = 'none';
 
-            let lat = pos.coords.latitude; let lon = pos.coords.longitude;
-            let speed = pos.coords.speed; // Speed in m/s
+            let lat = pos.coords.latitude; 
+            let lon = pos.coords.longitude;
+            let accuracy = pos.coords.accuracy; // in meters
+            let currentTime = Date.now();
+            
+            // Ignore terrible signal (>30m accuracy)
+            if (accuracy > 30) return;
 
-            // Filter: Ignore if accuracy is bad (>20m) or speed is too low (< 0.8 m/s ~ 2.8 km/h)
-            // This prevents "drift" steps when standing still.
-            let isMoving = speed !== null && speed > 0.8;
+            if (lastLat) {
+                let d = getDist(lastLat, lastLon, lat, lon); // Distance in km
+                let distMeters = d * 1000;
+                
+                // Calculate time delta in seconds
+                let timeDiff = (currentTime - lastTime) / 1000;
+                if (timeDiff <= 0) timeDiff = 1; 
+                
+                // Calculate Speed manually (m/s)
+                let calculatedSpeed = distMeters / timeDiff;
+                let reportedSpeed = pos.coords.speed;
+                
+                // Use reported speed if good, else use calculated
+                let finalSpeed = (reportedSpeed !== null && reportedSpeed >= 0) ? reportedSpeed : calculatedSpeed;
 
-            if (lastLat && isMoving) {
-                let d = getDist(lastLat, lastLon, lat, lon);
-                // Double check distance sanity (e.g. max 10 meters per second)
-                if (d > 0.0005 && d < 0.01) { 
+                // SMART FILTER:
+                // 1. Must have moved at least 2.5 meters (ignores tiny jitter)
+                // 2. Speed must be reasonable (0.5 m/s to 10 m/s - walk to sprint)
+                // 3. Don't count teleportation (impossible speed > 36 km/h)
+                if (distMeters > 2.5 && finalSpeed > 0.4 && finalSpeed < 10) {
                     totalDist += d; 
-                    // Steps: ~1.3 steps per meter for running, ~1.5 for walking
-                    // We use 1.4 as an average multiplier for GPS distance
-                    let stepsAdded = Math.floor(d * 1400); 
-                    totalSteps += stepsAdded;
+                    
+                    // Dynamic Steps: Running has longer stride (fewer steps/km) than walking
+                    // Walking: ~1300 steps/km. Running: ~1000 steps/km
+                    let stepsMultiplier = finalSpeed > 2.5 ? 1000 : 1350;
+                    totalSteps += Math.floor(d * stepsMultiplier);
                     
                     // Calories: Weight * Distance * Multiplier
                     totalCals += d * USER_WEIGHT * 1.03; 
                 }
             }
-            lastLat = lat; lastLon = lon;
+            
+            lastLat = lat; 
+            lastLon = lon;
+            lastTime = currentTime;
         }
 
         function onGpsFail() {
