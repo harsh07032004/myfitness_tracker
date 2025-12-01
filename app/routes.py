@@ -368,32 +368,36 @@ def profile():
                 
                 if stats:
                     # Auto-Update User Stats
-                    current_user.gender = stats.get('gender', 'Male')
-                    current_user.height = float(stats.get('height', 175))
-                    current_user.weight = float(stats.get('weight', 70))
-                    
-                    # Auto-Recalculate Goal (Mifflin-St Jeor)
-                    # We assume age 25 if not set, and Moderate activity
-                    age = current_user.age if current_user.age else 25
-                    activity = current_user.activity_level if current_user.activity_level else 'Moderate'
-                    
-                    bmr = (10 * current_user.weight) + (6.25 * current_user.height) - (5 * age)
-                    if current_user.gender == 'Male':
-                        bmr += 5
-                    else:
-                        bmr -= 161
-                    
-                    multipliers = {'Sedentary': 1.2, 'Light': 1.375, 'Moderate': 1.55, 'Active': 1.725}
-                    tdee = int(bmr * multipliers.get(activity, 1.55))
-                    
-                    # Auto-Calculate Water (35ml per kg / 250ml per glass)
-                    water_glasses = int((current_user.weight * 35) / 250)
-                    
-                    current_user.goal_calories = tdee
-                    current_user.goal_water = water_glasses
-                    current_user.save()
-                    
-                    flash(f"AI Analysis Success! Goal: {tdee} kcal, Water: {water_glasses} glasses.")
+                    # Ensure we cast to float/int to avoid errors
+                    try:
+                        current_user.gender = stats.get('gender', 'Male')
+                        current_user.height = float(stats.get('height', 175))
+                        current_user.weight = float(stats.get('weight', 70))
+                        
+                        # Auto-Recalculate Goal (Mifflin-St Jeor)
+                        age = current_user.age if current_user.age else 25
+                        activity = current_user.activity_level if current_user.activity_level else 'Moderate'
+                        
+                        bmr = (10 * current_user.weight) + (6.25 * current_user.height) - (5 * age)
+                        if current_user.gender == 'Male':
+                            bmr += 5
+                        else:
+                            bmr -= 161
+                        
+                        multipliers = {'Sedentary': 1.2, 'Light': 1.375, 'Moderate': 1.55, 'Active': 1.725}
+                        tdee = int(bmr * multipliers.get(activity, 1.55))
+                        
+                        # Auto-Calculate Water
+                        water_glasses = int((current_user.weight * 35) / 250)
+                        
+                        current_user.goal_calories = tdee
+                        current_user.goal_water = water_glasses
+                        current_user.save() # SAVE TO DB HERE
+                        
+                        flash(f"AI Updated: {current_user.height}cm, {current_user.weight}kg. Goal: {tdee} kcal.")
+                    except Exception as db_err:
+                        print(f"DB Update Error: {db_err}")
+                        flash("AI Analysis worked, but failed to save stats.")
                 else:
                     flash("AI could not detect a person clearly. Please try a full-body shot.")
                 
